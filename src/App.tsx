@@ -240,13 +240,13 @@ export default function App() {
           <directionalLight position={[8, 18, 8]} intensity={2} />
           <pointLight position={[-5, 8, 0]} color="#16cfff" intensity={25} distance={30} />
 
-          <City />
-          <Player
-  cameraMode={cameraMode}
-  joystick={joystick}
-/>
+                    <City />
 
+          <Player
+            cameraMode={cameraMode}
+            joystick={joystick}
           />
+        </Canvas>
         </Canvas>
       </div>
       <GameControls
