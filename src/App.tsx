@@ -1,7 +1,8 @@
-
+import { useRef, useState } from "react";
+import Player from "./Player";
+import GameControls from "./GameControls";
 import { Canvas } from "@react-three/fiber";
-import { Float, OrbitControls, Stars, Text } from "@react-three/drei";
-
+import { Float, Stars, Text } from "@react-three/drei";
 type BuildingProps = {
   x: number;
   z: number;
@@ -215,6 +216,15 @@ function City() {
 
 export default function App() {
   return (
+      const joystick = useRef({ x: 0, y: 0 });
+
+  const [cameraMode, setCameraMode] = useState<"third" | "first">("third");
+
+  const toggleCamera = () => {
+    setCameraMode((current) =>
+      current === "third" ? "first" : "third"
+    );
+  };
     <main className="world">
       <div className="scene">
         <Canvas
@@ -229,6 +239,10 @@ export default function App() {
           <pointLight position={[-5, 8, 0]} color="#16cfff" intensity={25} distance={30} />
 
           <City />
+          <Player
+  cameraMode={cameraMode}
+  joystick={joystick}
+/>
 
           <OrbitControls
             makeDefault
@@ -239,6 +253,11 @@ export default function App() {
           />
         </Canvas>
       </div>
+      <GameControls
+  joystick={joystick}
+  cameraMode={cameraMode}
+  onToggleCamera={toggleCamera}
+/>
 
       <header className="topbar">
         <a className="brand" href="#">
