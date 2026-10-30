@@ -247,7 +247,6 @@ export default function App() {
             joystick={joystick}
           />
         </Canvas>
-        </Canvas>
       </div>
       <GameControls
   joystick={joystick}
