@@ -215,8 +215,7 @@ function City() {
 }
 
 export default function App() {
-  return (
-      const joystick = useRef({ x: 0, y: 0 });
+  const joystick = useRef({ x: 0, y: 0 });
 
   const [cameraMode, setCameraMode] = useState<"third" | "first">("third");
 
@@ -225,6 +224,9 @@ export default function App() {
       current === "third" ? "first" : "third"
     );
   };
+
+  return (
+
     <main className="world">
       <div className="scene">
         <Canvas
@@ -244,12 +246,6 @@ export default function App() {
   joystick={joystick}
 />
 
-          <OrbitControls
-            makeDefault
-            enablePan={false}
-            minDistance={9}
-            maxDistance={42}
-            maxPolarAngle={Math.PI / 2.05}
           />
         </Canvas>
       </div>
