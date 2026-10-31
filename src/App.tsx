@@ -1,6 +1,7 @@
 import { useRef, useState } from "react";
 import Player from "./Player";
 import GameControls from "./GameControls";
+import Pedestrian from "./Pedestrian";
 import { Canvas } from "@react-three/fiber";
 import { Float, Stars, Text } from "@react-three/drei";
 type BuildingProps = {
@@ -133,7 +134,13 @@ function City() {
     { x: -17, z: -3, height: 6, width: 2.5, depth: 3, color: "#182c45", style: 0 },
     { x: 17, z: 7, height: 7, width: 2.5, depth: 3, color: "#17354b", style: 1 },
   ];
-
+      {/* City pedestrians */}
+      <Pedestrian x={-3.5} z={-18} speed={1.1} direction={1} color="#ff8a65" />
+      <Pedestrian x={3.5} z={-10} speed={0.9} direction={1} color="#5b9cff" />
+      <Pedestrian x={-3.5} z={0} speed={1.0} direction={-1} color="#d58cff" />
+      <Pedestrian x={3.5} z={12} speed={1.2} direction={-1} color="#f3c969" />
+      <Pedestrian x={-3.5} z={19} speed={0.85} direction={1} color="#64d6a5" />
+      <Pedestrian x={3.5} z={-3} speed={1.05} direction={-1} color="#e98bba" />
   return (
     <>
       {/* City ground */}
