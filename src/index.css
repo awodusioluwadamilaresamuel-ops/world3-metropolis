@@ -222,3 +222,82 @@ h1 em {
     font-size: 8px;
   }
 }
+/* MOBILE GAME MOVEMENT CONTROLS */
+.game-controls {
+  position: absolute;
+  z-index: 5;
+  left: 22px;
+  right: 22px;
+  bottom: 90px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  pointer-events: none;
+}
+
+.joystick-base {
+  position: relative;
+  width: 116px;
+  height: 116px;
+  border-radius: 50%;
+  border: 2px solid #63eaff80;
+  background: #102b458c;
+  box-shadow: 0 0 25px #31dfff25;
+  touch-action: none;
+  pointer-events: auto;
+  user-select: none;
+}
+
+.joystick-knob {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 46px;
+  height: 46px;
+  margin-left: -23px;
+  margin-top: -23px;
+  border-radius: 50%;
+  border: 2px solid #a4f5ff;
+  background: linear-gradient(145deg, #51eaff, #1675ad);
+  box-shadow: 0 0 18px #42dcff80;
+  pointer-events: none;
+}
+
+.game-actions {
+  pointer-events: auto;
+}
+
+.game-action-button {
+  min-width: 105px;
+  padding: 13px;
+  border: 1px solid #58eaff80;
+  border-radius: 12px;
+  background: #102b45dd;
+  color: #e8fbff;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+}
+
+.game-action-button span {
+  font-size: 23px;
+}
+
+.game-action-button small {
+  font-size: 9px;
+  letter-spacing: 1px;
+}
+
+@media (max-width: 640px) {
+  .game-controls {
+    bottom: 85px;
+    left: 16px;
+    right: 16px;
+  }
+
+  .joystick-base {
+    width: 108px;
+    height: 108px;
+  }
+}
