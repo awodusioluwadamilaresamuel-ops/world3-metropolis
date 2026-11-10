@@ -301,18 +301,6 @@ h1 em {
     height: 108px;
   }
 }
-@media (max-width: 640px) {
-  .game-controls {
-    bottom: 85px;
-    left: 16px;
-    right: 16px;
-  }
-
-  .joystick-base {
-    width: 108px;
-    height: 108px;
-  }
-}
 
 /* WORLD³ CINEMATIC WELCOME SCREEN */
 
