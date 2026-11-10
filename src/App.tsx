@@ -226,6 +226,7 @@ export default function App() {
   const joystick = useRef({ x: 0, y: 0 });
 
   const [cameraMode, setCameraMode] = useState<"third" | "first">("third");
+  const [hasEntered, setHasEntered] = useState(false);
 
   const toggleCamera = () => {
     setCameraMode((current) =>
@@ -234,7 +235,6 @@ export default function App() {
   };
 
   return (
-
     <main className="world">
       <div className="scene">
         <Canvas
@@ -246,9 +246,14 @@ export default function App() {
 
           <ambientLight intensity={0.85} />
           <directionalLight position={[8, 18, 8]} intensity={2} />
-          <pointLight position={[-5, 8, 0]} color="#16cfff" intensity={25} distance={30} />
+          <pointLight
+            position={[-5, 8, 0]}
+            color="#16cfff"
+            intensity={25}
+            distance={30}
+          />
 
-                    <City />
+          <City />
 
           <Player
             cameraMode={cameraMode}
@@ -256,43 +261,44 @@ export default function App() {
           />
         </Canvas>
       </div>
-      <GameControls
-  joystick={joystick}
-  cameraMode={cameraMode}
-  onToggleCamera={toggleCamera}
-/>
 
-      <header className="topbar">
-        <a className="brand" href="#">
-          <span>W³</span> WORLD<span className="sup">³</span>
-        </a>
-        <div className="status">
-          <i /> CITY SIMULATION ONLINE
-        </div>
-        <div className="enter">WORLD INITIALIZING</div>
-      </header>
+      {!hasEntered && (
+        <section className="intro-screen">
+          <div className="intro-content">
+            <p className="intro-kicker">A WORLD WITHOUT LIMITS</p>
 
-      <section className="hero">
-        <p className="eyebrow">A LIVING DIGITAL WORLD</p>
-        <h1>
-          NEON
-          <br />
-          <em>METROPOLIS</em>
-        </h1>
-        <p className="intro">
-          A city without a finish line. Explore the skyline,
-          discover new places, and make this world yours.
-        </p>
-        <div className="hero-meta">
-          <span>01 / THE BEGINNING</span>
-          <span>DRAG TO LOOK AROUND ↓</span>
-        </div>
-      </section>
+            <h1 className="intro-title">
+              WORLD<span>³</span>
+            </h1>
 
-      <div className="bottom-note">
-        <span>WORLD³ PROJECT</span>
-        <span>BUILT TO BE EXPLORED</span>
-      </div>
+            <p className="intro-copy">
+              A city waiting to be lived in.
+              <br />
+              Your story starts here.
+            </p>
+
+            <button
+              className="intro-enter"
+              onClick={() => setHasEntered(true)}
+            >
+              ENTER THE CITY <span>↗</span>
+            </button>
+          </div>
+
+          <div className="intro-footer">
+            NEON METROPOLIS
+            <span>AN OPEN WORLD EXPERIENCE</span>
+          </div>
+        </section>
+      )}
+
+      {hasEntered && (
+        <GameControls
+          joystick={joystick}
+          cameraMode={cameraMode}
+          onToggleCamera={toggleCamera}
+        />
+      )}
     </main>
   );
 }
