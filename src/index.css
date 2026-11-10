@@ -301,3 +301,144 @@ h1 em {
     height: 108px;
   }
 }
+@media (max-width: 640px) {
+  .game-controls {
+    bottom: 85px;
+    left: 16px;
+    right: 16px;
+  }
+
+  .joystick-base {
+    width: 108px;
+    height: 108px;
+  }
+}
+
+/* WORLD³ CINEMATIC WELCOME SCREEN */
+
+.world {
+  height: 100svh;
+  min-height: 100svh;
+}
+
+.intro-screen {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 30px 24px;
+  overflow: hidden;
+  text-align: center;
+  background:
+    radial-gradient(
+      ellipse at 50% 42%,
+      #102d48a8 0%,
+      #080f20d9 55%,
+      #050914f5 100%
+    );
+}
+
+.intro-content {
+  width: 100%;
+  max-width: 500px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.intro-kicker {
+  margin: 0 0 22px;
+  color: #64eaff;
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.3em;
+}
+
+.intro-title {
+  margin: 0;
+  color: #f4f8ff;
+  font-size: clamp(76px, 17vw, 120px);
+  font-weight: 700;
+  letter-spacing: -0.09em;
+  line-height: 1;
+  text-shadow: 0 0 45px #40cfff35;
+}
+
+.intro-title span {
+  color: #55eaff;
+  font-size: 0.48em;
+  vertical-align: top;
+  margin-left: 5px;
+}
+
+.intro-copy {
+  margin: 24px 0 34px;
+  color: #b7c9dc;
+  font-size: 15px;
+  line-height: 1.8;
+  letter-spacing: 0.025em;
+}
+
+.intro-enter {
+  min-width: 205px;
+  padding: 16px 23px;
+  border: 1px solid #5ceaff;
+  border-radius: 4px;
+  background: linear-gradient(110deg, #123c56, #087c9d);
+  color: #f2fcff;
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  cursor: pointer;
+  box-shadow: 0 0 28px #32dfff25;
+  transition: background 0.2s ease, box-shadow 0.2s ease;
+}
+
+.intro-enter span {
+  margin-left: 12px;
+  font-size: 16px;
+}
+
+.intro-enter:active {
+  background: #1594b2;
+  box-shadow: 0 0 35px #32dfff65;
+}
+
+.intro-footer {
+  position: absolute;
+  bottom: max(26px, env(safe-area-inset-bottom));
+  left: 0;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  color: #8ba9c5;
+  font-family: 'DM Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 0.2em;
+}
+
+.intro-footer span {
+  color: #526e8b;
+  font-size: 8px;
+  letter-spacing: 0.16em;
+}
+
+@media (max-width: 640px) {
+  .intro-title {
+    font-size: clamp(76px, 20vw, 105px);
+  }
+
+  .intro-copy {
+    font-size: 14px;
+  }
+
+  .intro-kicker {
+    font-size: 9px;
+    letter-spacing: 0.22em;
+  }
+  }
