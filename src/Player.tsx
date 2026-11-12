@@ -1,6 +1,8 @@
 
-import { useEffect, useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
+import { useAnimations, useGLTF } from "@react-three/drei";
+import { clone } from "three/examples/jsm/utils/SkeletonUtils.js";
 import * as THREE from "three";
 
 type CameraMode = "third" | "first";
@@ -21,7 +23,23 @@ export default function Player({
 }: PlayerProps) {
   const player = useRef<THREE.Group>(null);
   const keys = useRef<Record<string, boolean>>({});
+  const currentAction = useRef<THREE.AnimationAction | null>(null);
+
   const { camera } = useThree();
+
+  const { scene, animations } = useGLTF("/models/player.glb");
+  const model = useMemo(() => clone(scene), [scene]);
+
+  const { actions } = useAnimations(animations, model);
+
+  useEffect(() => {
+    model.traverse((object) => {
+      if (object instanceof THREE.Mesh) {
+        object.castShadow = true;
+        object.receiveShadow = true;
+      }
+    });
+  }, [model]);
 
   useEffect(() => {
     const down = (event: KeyboardEvent) => {
@@ -63,6 +81,21 @@ export default function Player({
       joystick.current.y;
 
     const moving = Math.abs(moveX) + Math.abs(moveZ) > 0.05;
+    const running =
+      keys.current.ShiftLeft || keys.current.ShiftRight;
+
+    const nextAction = running
+      ? actions.run
+      : moving
+        ? actions.walk
+        : actions.idle;
+
+    if (nextAction && currentAction.current !== nextAction) {
+      currentAction.current?.fadeOut(0.2);
+
+      nextAction.reset().fadeIn(0.2).play();
+      currentAction.current = nextAction;
+    }
 
     if (moving) {
       const length = Math.sqrt(moveX * moveX + moveZ * moveZ);
@@ -70,7 +103,6 @@ export default function Player({
       moveX /= length;
       moveZ /= length;
 
-      const running = keys.current.ShiftLeft || keys.current.ShiftRight;
       const speed = running ? 7.5 : 4.2;
 
       character.position.x += moveX * speed * delta;
@@ -115,7 +147,11 @@ export default function Player({
         character.position.z,
       );
 
-      camera.position.lerp(cameraPosition, 1 - Math.exp(-5 * delta));
+      camera.position.lerp(
+        cameraPosition,
+        1 - Math.exp(-5 * delta),
+      );
+
       camera.lookAt(cameraTarget);
     } else {
       character.visible = false;
@@ -135,58 +171,21 @@ export default function Player({
         character.position.z + forwardZ * 10,
       );
 
-      camera.position.lerp(cameraPosition, 1 - Math.exp(-12 * delta));
+      camera.position.lerp(
+        cameraPosition,
+        1 - Math.exp(-12 * delta),
+      );
+
       camera.lookAt(cameraTarget);
     }
   });
 
   return (
     <group ref={player} position={[0, 0, 0]}>
-      {/* Character body */}
-      <mesh position={[0, 1.05, 0]} castShadow>
-        <capsuleGeometry args={[0.32, 0.85, 5, 12]} />
-        <meshStandardMaterial
-          color="#173c60"
-          metalness={0.65}
-          roughness={0.3}
-        />
-      </mesh>
-
-      {/* Character head */}
-      <mesh position={[0, 1.85, 0]} castShadow>
-        <sphereGeometry args={[0.23, 16, 16]} />
-        <meshStandardMaterial color="#d5a77f" roughness={0.7} />
-      </mesh>
-
-      {/* Neon chest detail */}
-      <mesh position={[0, 1.2, 0.3]}>
-        <boxGeometry args={[0.18, 0.12, 0.025]} />
-        <meshBasicMaterial color="#42eaff" />
-      </mesh>
-
-      {/* Left arm */}
-      <mesh position={[-0.39, 1.05, 0]}>
-        <capsuleGeometry args={[0.09, 0.48, 4, 8]} />
-        <meshStandardMaterial color="#173c60" />
-      </mesh>
-
-      {/* Right arm */}
-      <mesh position={[0.39, 1.05, 0]}>
-        <capsuleGeometry args={[0.09, 0.48, 4, 8]} />
-        <meshStandardMaterial color="#173c60" />
-      </mesh>
-
-      {/* Left leg */}
-      <mesh position={[-0.14, 0.36, 0]}>
-        <capsuleGeometry args={[0.11, 0.48, 4, 8]} />
-        <meshStandardMaterial color="#101d35" />
-      </mesh>
-
-      {/* Right leg */}
-      <mesh position={[0.14, 0.36, 0]}>
-        <capsuleGeometry args={[0.11, 0.48, 4, 8]} />
-        <meshStandardMaterial color="#101d35" />
-      </mesh>
+      <primitive object={model} />
     </group>
   );
 }
+
+useGLTF.preload("/models/player.glb");
+    
