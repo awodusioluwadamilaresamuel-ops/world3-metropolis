@@ -4,10 +4,7 @@ import { useRef, useState } from "react";
 type CameraMode = "third" | "first";
 
 type JoystickRef = {
-  current: {
-    x: number;
-    y: number;
-  };
+  current: { x: number; y: number };
 };
 
 type GameControlsProps = {
@@ -22,10 +19,11 @@ export default function GameControls({
   onToggleCamera,
 }: GameControlsProps) {
   const base = useRef<HTMLDivElement>(null);
+  const activePointer = useRef<number | null>(null);
   const [knob, setKnob] = useState({ x: 0, y: 0 });
 
   const moveJoystick = (event: React.PointerEvent<HTMLDivElement>) => {
-    if (!base.current) return;
+    if (!base.current || activePointer.current !== event.pointerId) return;
 
     const rect = base.current.getBoundingClientRect();
     const centerX = rect.left + rect.width / 2;
@@ -34,8 +32,8 @@ export default function GameControls({
     let dx = event.clientX - centerX;
     let dy = event.clientY - centerY;
 
-    const distance = Math.sqrt(dx * dx + dy * dy);
     const maxDistance = 43;
+    const distance = Math.hypot(dx, dy);
 
     if (distance > maxDistance) {
       dx = (dx / distance) * maxDistance;
@@ -43,12 +41,12 @@ export default function GameControls({
     }
 
     setKnob({ x: dx, y: dy });
-
     joystick.current.x = dx / maxDistance;
     joystick.current.y = dy / maxDistance;
   };
 
   const resetJoystick = () => {
+    activePointer.current = null;
     setKnob({ x: 0, y: 0 });
     joystick.current.x = 0;
     joystick.current.y = 0;
@@ -59,20 +57,30 @@ export default function GameControls({
       <div
         ref={base}
         className="joystick-base"
+        onContextMenu={(event) => event.preventDefault()}
         onPointerDown={(event) => {
+          if (activePointer.current !== null) return;
+          event.preventDefault();
+          activePointer.current = event.pointerId;
           event.currentTarget.setPointerCapture(event.pointerId);
           moveJoystick(event);
         }}
-        onPointerMove={(event) => {
-          if (event.buttons > 0) moveJoystick(event);
+        onPointerMove={moveJoystick}
+        onPointerUp={(event) => {
+          if (activePointer.current !== event.pointerId) return;
+          resetJoystick();
         }}
-        onPointerUp={resetJoystick}
-        onPointerCancel={resetJoystick}
+        onPointerCancel={(event) => {
+          if (activePointer.current === event.pointerId) resetJoystick();
+        }}
+        onLostPointerCapture={(event) => {
+          if (activePointer.current === event.pointerId) resetJoystick();
+        }}
       >
         <div
           className="joystick-knob"
           style={{
-            transform: `translate(${knob.x}px, ${knob.y}px)`,
+            transform: \`translate(\${knob.x}px, \${knob.y}px)\`,
           }}
         />
       </div>
