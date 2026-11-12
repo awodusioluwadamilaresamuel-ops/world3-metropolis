@@ -415,7 +415,7 @@ h1 em {
   font-size: 8px;
   letter-spacing: 0.16em;
  }
-}
+
 @media (max-width: 640px) {
   .intro-title {
     font-size: clamp(76px, 20vw, 105px);
@@ -429,3 +429,4 @@ h1 em {
     font-size: 9px;
     letter-spacing: 0.22em;
   }
+}
