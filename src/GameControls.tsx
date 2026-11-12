@@ -80,7 +80,7 @@ export default function GameControls({
         <div
           className="joystick-knob"
           style={{
-            transform: \`translate(\${knob.x}px, \${knob.y}px)\`,
+            transform: `translate(${knob.x}px, ${knob.y}px)`,
           }}
         />
       </div>
