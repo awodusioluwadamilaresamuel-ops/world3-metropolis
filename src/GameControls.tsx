@@ -7,23 +7,31 @@ type JoystickRef = {
   current: { x: number; y: number };
 };
 
+type CameraLookRef = {
+  current: { yaw: number; pitch: number };
+};
+
 type GameControlsProps = {
   joystick: JoystickRef;
+  cameraLook: CameraLookRef;
   cameraMode: CameraMode;
   onToggleCamera: () => void;
 };
 
 export default function GameControls({
   joystick,
+  cameraLook,
   cameraMode,
   onToggleCamera,
 }: GameControlsProps) {
   const base = useRef<HTMLDivElement>(null);
-  const activePointer = useRef<number | null>(null);
+  const activeJoystickPointer = useRef<number | null>(null);
+  const activeLookPointer = useRef<number | null>(null);
+  const lastLookPosition = useRef({ x: 0, y: 0 });
   const [knob, setKnob] = useState({ x: 0, y: 0 });
 
   const moveJoystick = (event: React.PointerEvent<HTMLDivElement>) => {
-    if (!base.current || activePointer.current !== event.pointerId) return;
+    if (!base.current || activeJoystickPointer.current !== event.pointerId) return;
 
     const rect = base.current.getBoundingClientRect();
     const centerX = rect.left + rect.width / 2;
@@ -46,35 +54,95 @@ export default function GameControls({
   };
 
   const resetJoystick = () => {
-    activePointer.current = null;
+    activeJoystickPointer.current = null;
     setKnob({ x: 0, y: 0 });
     joystick.current.x = 0;
     joystick.current.y = 0;
   };
 
+  const stopCameraLook = (pointerId: number) => {
+    if (activeLookPointer.current === pointerId) {
+      activeLookPointer.current = null;
+    }
+  };
+
   return (
     <div className="game-controls">
+      <div
+        className="camera-look-zone"
+        aria-label="Drag to look around"
+        onContextMenu={(event) => event.preventDefault()}
+        onPointerDown={(event) => {
+          if (activeLookPointer.current !== null) return;
+
+          event.preventDefault();
+          activeLookPointer.current = event.pointerId;
+
+          lastLookPosition.current = {
+            x: event.clientX,
+            y: event.clientY,
+          };
+
+          event.currentTarget.setPointerCapture(event.pointerId);
+        }}
+        onPointerMove={(event) => {
+          if (activeLookPointer.current !== event.pointerId) return;
+
+          event.preventDefault();
+
+          const deltaX = event.clientX - lastLookPosition.current.x;
+          const deltaY = event.clientY - lastLookPosition.current.y;
+
+          lastLookPosition.current = {
+            x: event.clientX,
+            y: event.clientY,
+          };
+
+          const sensitivity = 0.006;
+
+          cameraLook.current.yaw -= deltaX * sensitivity;
+
+          cameraLook.current.pitch = Math.max(
+            -0.12,
+            Math.min(
+              0.95,
+              cameraLook.current.pitch - deltaY * sensitivity
+            )
+          );
+        }}
+        onPointerUp={(event) => stopCameraLook(event.pointerId)}
+        onPointerCancel={(event) => stopCameraLook(event.pointerId)}
+        onLostPointerCapture={(event) => stopCameraLook(event.pointerId)}
+      />
+
       <div
         ref={base}
         className="joystick-base"
         onContextMenu={(event) => event.preventDefault()}
         onPointerDown={(event) => {
-          if (activePointer.current !== null) return;
+          if (activeJoystickPointer.current !== null) return;
+
           event.preventDefault();
-          activePointer.current = event.pointerId;
+          activeJoystickPointer.current = event.pointerId;
+
           event.currentTarget.setPointerCapture(event.pointerId);
           moveJoystick(event);
         }}
         onPointerMove={moveJoystick}
         onPointerUp={(event) => {
-          if (activePointer.current !== event.pointerId) return;
-          resetJoystick();
+          if (activeJoystickPointer.current === event.pointerId) {
+            resetJoystick();
+          }
         }}
         onPointerCancel={(event) => {
-          if (activePointer.current === event.pointerId) resetJoystick();
+          if (activeJoystickPointer.current === event.pointerId) {
+            resetJoystick();
+          }
         }}
         onLostPointerCapture={(event) => {
-          if (activePointer.current === event.pointerId) resetJoystick();
+          if (activeJoystickPointer.current === event.pointerId) {
+            resetJoystick();
+          }
         }}
       >
         <div
@@ -92,7 +160,9 @@ export default function GameControls({
         >
           <span>↗</span>
           <small>
-            {cameraMode === "third" ? "FIRST PERSON" : "THIRD PERSON"}
+            {cameraMode === "third"
+              ? "FIRST PERSON"
+              : "THIRD PERSON"}
           </small>
         </button>
       </div>
