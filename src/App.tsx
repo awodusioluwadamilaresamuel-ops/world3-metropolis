@@ -224,6 +224,7 @@ function City() {
 
 export default function App() {
   const joystick = useRef({ x: 0, y: 0 });
+  const cameraLook = useRef({ yaw: 0.685, pitch: 0.34 });
 
   const [cameraMode, setCameraMode] = useState<"third" | "first">("third");
   const [hasEntered, setHasEntered] = useState(false);
@@ -256,9 +257,10 @@ export default function App() {
           <City />
 
           <Player
-            cameraMode={cameraMode}
-            joystick={joystick}
-          />
+  cameraMode={cameraMode}
+  joystick={joystick}
+  cameraLook={cameraLook}
+/>
         </Canvas>
       </div>
 
@@ -294,10 +296,11 @@ export default function App() {
 
       {hasEntered && (
         <GameControls
-          joystick={joystick}
-          cameraMode={cameraMode}
-          onToggleCamera={toggleCamera}
-        />
+  joystick={joystick}
+  cameraLook={cameraLook}
+  cameraMode={cameraMode}
+  onToggleCamera={toggleCamera}
+/>
       )}
     </main>
   );
