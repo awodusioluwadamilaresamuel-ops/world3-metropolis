@@ -1,171 +1,200 @@
 
-import { useRef, useState } from "react";
+import { useEffect, useMemo, useRef } from "react";
+import { useFrame, useThree } from "@react-three/fiber";
+import { useAnimations, useGLTF } from "@react-three/drei";
+import { clone } from "three/examples/jsm/utils/SkeletonUtils.js";
+import * as THREE from "three";
 
 type CameraMode = "third" | "first";
-
-type JoystickRef = {
-  current: { x: number; y: number };
-};
 
 type CameraLookRef = {
   current: { yaw: number; pitch: number };
 };
 
-type GameControlsProps = {
-  joystick: JoystickRef;
-  cameraLook: CameraLookRef;
+type PlayerProps = {
   cameraMode: CameraMode;
-  onToggleCamera: () => void;
+  joystick: {
+    current: { x: number; y: number };
+  };
+  cameraLook?: CameraLookRef;
 };
 
-export default function GameControls({
+export default function Player({
+  cameraMode,
   joystick,
   cameraLook,
-  cameraMode,
-  onToggleCamera,
-}: GameControlsProps) {
-  const base = useRef<HTMLDivElement>(null);
-  const activeJoystickPointer = useRef<number | null>(null);
-  const activeLookPointer = useRef<number | null>(null);
-  const lastLookPosition = useRef({ x: 0, y: 0 });
-  const [knob, setKnob] = useState({ x: 0, y: 0 });
+}: PlayerProps) {
+  const player = useRef<THREE.Group>(null);
+  const keys = useRef<Record<string, boolean>>({});
+  const currentAction = useRef<THREE.AnimationAction | null>(null);
 
-  const moveJoystick = (event: React.PointerEvent<HTMLDivElement>) => {
-    if (!base.current || activeJoystickPointer.current !== event.pointerId) return;
+  const { camera } = useThree();
 
-    const rect = base.current.getBoundingClientRect();
-    const centerX = rect.left + rect.width / 2;
-    const centerY = rect.top + rect.height / 2;
+  const { scene, animations } = useGLTF("/models/player.glb");
+  const model = useMemo(() => clone(scene), [scene]);
+  const { actions } = useAnimations(animations, model);
 
-    let dx = event.clientX - centerX;
-    let dy = event.clientY - centerY;
+  useEffect(() => {
+    model.traverse((object) => {
+      if (object instanceof THREE.Mesh) {
+        object.castShadow = true;
+        object.receiveShadow = true;
+      }
+    });
+  }, [model]);
 
-    const maxDistance = 43;
-    const distance = Math.hypot(dx, dy);
+  useEffect(() => {
+    const down = (event: KeyboardEvent) => {
+      keys.current[event.code] = true;
+    };
 
-    if (distance > maxDistance) {
-      dx = (dx / distance) * maxDistance;
-      dy = (dy / distance) * maxDistance;
+    const up = (event: KeyboardEvent) => {
+      keys.current[event.code] = false;
+    };
+
+    const clear = () => {
+      keys.current = {};
+    };
+
+    window.addEventListener("keydown", down);
+    window.addEventListener("keyup", up);
+    window.addEventListener("blur", clear);
+
+    return () => {
+      window.removeEventListener("keydown", down);
+      window.removeEventListener("keyup", up);
+      window.removeEventListener("blur", clear);
+    };
+  }, []);
+
+  useFrame((_, delta) => {
+    if (!player.current) return;
+
+    const character = player.current;
+
+    const yaw = cameraLook?.current.yaw ?? character.rotation.y;
+    const pitch = cameraLook?.current.pitch ?? 0.34;
+
+    const inputX =
+      (keys.current.KeyD || keys.current.ArrowRight ? 1 : 0) -
+      (keys.current.KeyA || keys.current.ArrowLeft ? 1 : 0) +
+      joystick.current.x;
+
+    const inputForward =
+      (keys.current.KeyW || keys.current.ArrowUp ? 1 : 0) -
+      (keys.current.KeyS || keys.current.ArrowDown ? 1 : 0) -
+      joystick.current.y;
+
+    let moveX =
+      Math.cos(yaw) * inputX -
+      Math.sin(yaw) * inputForward;
+
+    let moveZ =
+      -Math.sin(yaw) * inputX -
+      Math.cos(yaw) * inputForward;
+
+    const moving = Math.abs(moveX) + Math.abs(moveZ) > 0.05;
+    const running =
+      keys.current.ShiftLeft || keys.current.ShiftRight;
+
+    const nextAction = moving
+      ? running
+        ? actions.run
+        : actions.walk
+      : actions.idle;
+
+    if (nextAction && currentAction.current !== nextAction) {
+      currentAction.current?.fadeOut(0.2);
+      nextAction.reset().fadeIn(0.2).play();
+      currentAction.current = nextAction;
     }
 
-    setKnob({ x: dx, y: dy });
-    joystick.current.x = dx / maxDistance;
-    joystick.current.y = dy / maxDistance;
-  };
+    if (moving) {
+      const length = Math.hypot(moveX, moveZ);
 
-  const resetJoystick = () => {
-    activeJoystickPointer.current = null;
-    setKnob({ x: 0, y: 0 });
-    joystick.current.x = 0;
-    joystick.current.y = 0;
-  };
+      moveX /= length;
+      moveZ /= length;
 
-  const stopCameraLook = (pointerId: number) => {
-    if (activeLookPointer.current === pointerId) {
-      activeLookPointer.current = null;
+      const speed = running ? 7.5 : 4.2;
+
+      character.position.x += moveX * speed * delta;
+      character.position.z += moveZ * speed * delta;
+
+      character.position.x = THREE.MathUtils.clamp(
+        character.position.x,
+        -20,
+        20
+      );
+
+      character.position.z = THREE.MathUtils.clamp(
+        character.position.z,
+        -24,
+        24
+      );
+
+      const targetRotation = Math.atan2(-moveX, -moveZ);
+
+      character.rotation.y = THREE.MathUtils.damp(
+        character.rotation.y,
+        targetRotation,
+        10,
+        delta
+      );
     }
-  };
+
+    if (cameraMode === "third") {
+      character.visible = true;
+
+      const distance = 6;
+      const horizontalDistance = distance * Math.cos(pitch);
+
+      const cameraPosition = new THREE.Vector3(
+        character.position.x + Math.sin(yaw) * horizontalDistance,
+        1.2 + distance * Math.sin(pitch),
+        character.position.z + Math.cos(yaw) * horizontalDistance
+      );
+
+      const cameraTarget = new THREE.Vector3(
+        character.position.x,
+        1.2,
+        character.position.z
+      );
+
+      camera.position.lerp(
+        cameraPosition,
+        1 - Math.exp(-8 * delta)
+      );
+
+      camera.lookAt(cameraTarget);
+    } else {
+      character.visible = false;
+
+      const cameraPosition = new THREE.Vector3(
+        character.position.x,
+        1.65,
+        character.position.z
+      );
+
+      const cameraTarget = new THREE.Vector3(
+        character.position.x - Math.sin(yaw) * 10 * Math.cos(pitch),
+        1.65 + Math.sin(pitch) * 10,
+        character.position.z - Math.cos(yaw) * 10 * Math.cos(pitch)
+      );
+
+      camera.position.lerp(
+        cameraPosition,
+        1 - Math.exp(-12 * delta)
+      );
+
+      camera.lookAt(cameraTarget);
+    }
+  });
 
   return (
-    <div className="game-controls">
-      <div
-        className="camera-look-zone"
-        aria-label="Drag to look around"
-        onContextMenu={(event) => event.preventDefault()}
-        onPointerDown={(event) => {
-          if (activeLookPointer.current !== null) return;
-
-          event.preventDefault();
-          activeLookPointer.current = event.pointerId;
-
-          lastLookPosition.current = {
-            x: event.clientX,
-            y: event.clientY,
-          };
-
-          event.currentTarget.setPointerCapture(event.pointerId);
-        }}
-        onPointerMove={(event) => {
-          if (activeLookPointer.current !== event.pointerId) return;
-
-          event.preventDefault();
-
-          const deltaX = event.clientX - lastLookPosition.current.x;
-          const deltaY = event.clientY - lastLookPosition.current.y;
-
-          lastLookPosition.current = {
-            x: event.clientX,
-            y: event.clientY,
-          };
-
-          const sensitivity = 0.006;
-
-          cameraLook.current.yaw -= deltaX * sensitivity;
-
-          cameraLook.current.pitch = Math.max(
-            -0.12,
-            Math.min(
-              0.95,
-              cameraLook.current.pitch - deltaY * sensitivity
-            )
-          );
-        }}
-        onPointerUp={(event) => stopCameraLook(event.pointerId)}
-        onPointerCancel={(event) => stopCameraLook(event.pointerId)}
-        onLostPointerCapture={(event) => stopCameraLook(event.pointerId)}
-      />
-
-      <div
-        ref={base}
-        className="joystick-base"
-        onContextMenu={(event) => event.preventDefault()}
-        onPointerDown={(event) => {
-          if (activeJoystickPointer.current !== null) return;
-
-          event.preventDefault();
-          activeJoystickPointer.current = event.pointerId;
-
-          event.currentTarget.setPointerCapture(event.pointerId);
-          moveJoystick(event);
-        }}
-        onPointerMove={moveJoystick}
-        onPointerUp={(event) => {
-          if (activeJoystickPointer.current === event.pointerId) {
-            resetJoystick();
-          }
-        }}
-        onPointerCancel={(event) => {
-          if (activeJoystickPointer.current === event.pointerId) {
-            resetJoystick();
-          }
-        }}
-        onLostPointerCapture={(event) => {
-          if (activeJoystickPointer.current === event.pointerId) {
-            resetJoystick();
-          }
-        }}
-      >
-        <div
-          className="joystick-knob"
-          style={{
-            transform: `translate(${knob.x}px, ${knob.y}px)`,
-          }}
-        />
-      </div>
-
-      <div className="game-actions">
-        <button
-          className="game-action-button"
-          onClick={onToggleCamera}
-        >
-          <span>↗</span>
-          <small>
-            {cameraMode === "third"
-              ? "FIRST PERSON"
-              : "THIRD PERSON"}
-          </small>
-        </button>
-      </div>
-    </div>
+    <group ref={player} position={[0, 0, 0]}>
+      <primitive object={model} />
+    </group>
   );
 }
+
+useGLTF.preload("/models/player.glb");
