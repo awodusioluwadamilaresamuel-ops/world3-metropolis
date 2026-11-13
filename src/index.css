@@ -305,11 +305,8 @@ h1 em {
 }
 
 @media (max-width: 640px) {
-  .joystick-base {
     left: 16px;
     bottom: max(85px, calc(env(safe-area-inset-bottom) + 65px));
-    width: 108px;
-    height: 108px;
   }
 
   .game-actions {
