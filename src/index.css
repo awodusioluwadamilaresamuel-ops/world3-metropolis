@@ -50,7 +50,7 @@ a {
 }
 
 .scene canvas {
-  touch-action: pan-y;
+  touch-action: none;
 }
 
 .topbar {
@@ -224,19 +224,31 @@ h1 em {
 }
 /* MOBILE GAME MOVEMENT CONTROLS */
 .game-controls {
-  position: absolute;
+  position: fixed;
+  inset: 0;
   z-index: 5;
-  left: 22px;
-  right: 22px;
-  bottom: 90px;
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
+  display: block;
   pointer-events: none;
 }
 
+.camera-look-zone {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 62%;
+  z-index: 1;
+  pointer-events: auto;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
 .joystick-base {
-  position: relative;
+  position: absolute;
+  left: 22px;
+  bottom: max(90px, calc(env(safe-area-inset-bottom) + 70px));
+  z-index: 2;
   width: 116px;
   height: 116px;
   border-radius: 50%;
@@ -262,8 +274,11 @@ h1 em {
   box-shadow: 0 0 18px #42dcff80;
   pointer-events: none;
 }
-
 .game-actions {
+  position: absolute;
+  right: 22px;
+  bottom: max(90px, calc(env(safe-area-inset-bottom) + 70px));
+  z-index: 3;
   pointer-events: auto;
 }
 
@@ -290,11 +305,18 @@ h1 em {
 }
 
 @media (max-width: 640px) {
-  .game-controls {
-    bottom: 85px;
+  .joystick-base {
     left: 16px;
-    right: 16px;
+    bottom: max(85px, calc(env(safe-area-inset-bottom) + 65px));
+    width: 108px;
+    height: 108px;
   }
+
+  .game-actions {
+    right: 16px;
+    bottom: max(85px, calc(env(safe-area-inset-bottom) + 65px));
+  }
+}
 
   .joystick-base {
     width: 108px;
