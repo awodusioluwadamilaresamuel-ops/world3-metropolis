@@ -27,6 +27,11 @@ export default function Player({
   const player = useRef<THREE.Group>(null);
   const keys = useRef<Record<string, boolean>>({});
   const currentAction = useRef<THREE.AnimationAction | null>(null);
+  const velocity = useRef(new THREE.Vector3());
+  
+const cameraForward = useRef(new THREE.Vector3());
+const cameraRight = useRef(new THREE.Vector3());
+const desiredVelocity = useRef(new THREE.Vector3());
 
   const { camera } = useThree();
 
