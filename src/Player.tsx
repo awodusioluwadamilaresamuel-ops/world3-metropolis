@@ -76,76 +76,111 @@ const desiredVelocity = useRef(new THREE.Vector3());
     if (!player.current) return;
 
     const character = player.current;
+const yaw = cameraLook?.current.yaw ?? character.rotation.y;
+const pitch = cameraLook?.current.pitch ?? 0.34;
 
-    const yaw = cameraLook?.current.yaw ?? character.rotation.y;
-    const pitch = cameraLook?.current.pitch ?? 0.34;
+// Get the camera's actual horizontal forward direction.
+camera.getWorldDirection(cameraForward.current);
+cameraForward.current.y = 0;
+cameraForward.current.normalize();
 
-    const inputX =
-      (keys.current.KeyD || keys.current.ArrowRight ? 1 : 0) -
-      (keys.current.KeyA || keys.current.ArrowLeft ? 1 : 0) +
-      joystick.current.x;
+// Calculate the camera's horizontal right direction.
+cameraRight.current
+  .crossVectors(cameraForward.current, new THREE.Vector3(0, 1, 0))
+  .normalize();
 
-    const inputForward =
-      (keys.current.KeyW || keys.current.ArrowUp ? 1 : 0) -
-      (keys.current.KeyS || keys.current.ArrowDown ? 1 : 0) -
-      joystick.current.y;
+// Read keyboard and joystick input.
+let inputX =
+  (keys.current.KeyD || keys.current.ArrowRight ? 1 : 0) -
+  (keys.current.KeyA || keys.current.ArrowLeft ? 1 : 0) +
+  joystick.current.x;
 
-    let moveX =
-      Math.cos(yaw) * inputX -
-      Math.sin(yaw) * inputForward;
+let inputForward =
+  (keys.current.KeyW || keys.current.ArrowUp ? 1 : 0) -
+  (keys.current.KeyS || keys.current.ArrowDown ? 1 : 0) -
+  joystick.current.y;
 
-    let moveZ =
-      -Math.sin(yaw) * inputX -
-      Math.cos(yaw) * inputForward;
+// Prevent diagonal movement from being faster.
+const inputLength = Math.hypot(inputX, inputForward);
 
-    const moving = Math.abs(moveX) + Math.abs(moveZ) > 0.05;
-    const running =
-      keys.current.ShiftLeft || keys.current.ShiftRight;
+if (inputLength > 1) {
+  inputX /= inputLength;
+  inputForward /= inputLength;
+}
 
-    const nextAction = moving
-      ? running
-        ? actions.run
-        : actions.walk
-      : actions.idle;
+const inputMagnitude = Math.min(inputLength, 1);
 
-    if (nextAction && currentAction.current !== nextAction) {
-      currentAction.current?.fadeOut(0.2);
-      nextAction.reset().fadeIn(0.2).play();
-      currentAction.current = nextAction;
-    }
+const running =
+  keys.current.ShiftLeft || keys.current.ShiftRight;
 
-    if (moving) {
-      const length = Math.hypot(moveX, moveZ);
+const maxSpeed = running ? 7.5 : 4.2;
 
-      moveX /= length;
-      moveZ /= length;
+// Build movement direction from camera forward and right.
+desiredVelocity.current
+  .copy(cameraRight.current)
+  .multiplyScalar(inputX)
+  .addScaledVector(cameraForward.current, inputForward)
+  .multiplyScalar(maxSpeed);
 
-      const speed = running ? 7.5 : 4.2;
+// Smooth acceleration and deceleration.
+const acceleration = inputMagnitude > 0 ? 12 : 16;
 
-      character.position.x += moveX * speed * delta;
-      character.position.z += moveZ * speed * delta;
+velocity.current.lerp(
+  desiredVelocity.current,
+  1 - Math.exp(-acceleration * delta)
+);
 
-      character.position.x = THREE.MathUtils.clamp(
-        character.position.x,
-        -20,
-        20
-      );
+// Move the character using the smoothed velocity.
+character.position.x += velocity.current.x * delta;
+character.position.z += velocity.current.z * delta;
 
-      character.position.z = THREE.MathUtils.clamp(
-        character.position.z,
-        -24,
-        24
-      );
+// Keep the character inside the current playable area.
+character.position.x = THREE.MathUtils.clamp(
+  character.position.x,
+  -20,
+  20
+);
 
-      const targetRotation = Math.atan2(-moveX, -moveZ);
+character.position.z = THREE.MathUtils.clamp(
+  character.position.z,
+  -24,
+  24
+);
 
-      character.rotation.y = THREE.MathUtils.damp(
-        character.rotation.y,
-        targetRotation,
-        10,
-        delta
-      );
-    }
+// Determine whether the character is actually moving.
+const currentSpeed = velocity.current.length();
+const moving = currentSpeed > 0.15;
+
+// Select the appropriate animation.
+const nextAction = moving
+  ? running
+    ? actions.run
+    : actions.walk
+  : actions.idle;
+
+if (nextAction && currentAction.current !== nextAction) {
+  currentAction.current?.fadeOut(0.2);
+  nextAction.reset().fadeIn(0.2).play();
+  currentAction.current = nextAction;
+}
+
+// Smoothly rotate the character toward its movement direction.
+if (moving) {
+  const targetRotation = Math.atan2(
+    -velocity.current.x,
+    -velocity.current.z
+  );
+
+  const targetQuaternion = new THREE.Quaternion().setFromAxisAngle(
+    new THREE.Vector3(0, 1, 0),
+    targetRotation
+  );
+
+  character.quaternion.slerp(
+    targetQuaternion,
+    1 - Math.exp(-10 * delta)
+  );
+}
 
     if (cameraMode === "third") {
       character.visible = true;
